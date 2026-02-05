@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Safety Engine | Custom Model Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); }
+        .tab-active { border-color: #10b981; color: #10b981; background: rgba(16, 185, 129, 0.1); }
+        #output-json { scrollbar-width: thin; scrollbar-color: #334155 #0f172a; }
+    </style>
+</head>
+<body class="bg-[#0f172a] text-slate-200 min-h-screen font-sans antialiased">
+
+    <div class="flex h-screen overflow-hidden">
+        <aside class="w-72 border-r border-slate-800 bg-[#1e293b]/50 p-6 flex flex-col">
+            <div class="mb-10 flex items-center gap-3">
+                <div class="h-10 w-10 bg-emerald-500 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/20">
+                    <i class="fas fa-microchip text-white text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="font-extrabold text-lg leading-tight uppercase tracking-wider">Engine<span class="text-emerald-500">.AI</span></h1>
+                    <p class="text-[10px] text-slate-500 font-mono">CORE VERSION 0.1.0</p>
+                </div>
+            </div>
+
+            <nav class="space-y-2 flex-1">
+                <button onclick="showTab('text')" id="btn-text" class="w-full flex items-center gap-4 p-4 rounded-xl border border-transparent transition-all hover:bg-slate-800 tab-active">
+                    <i class="fas fa-file-shield text-lg"></i>
+                    <span class="font-medium text-sm">Text Analysis</span>
+                </button>
+                <button onclick="showTab('image')" id="btn-image" class="w-full flex items-center gap-4 p-4 rounded-xl border border-transparent transition-all hover:bg-slate-800 text-slate-400">
+                    <i class="fas fa-eye text-lg"></i>
+                    <span class="font-medium text-sm">Image Forensics</span>
+                </button>
+                <button onclick="showTab('security')" id="btn-security" class="w-full flex items-center gap-4 p-4 rounded-xl border border-transparent transition-all hover:bg-slate-800 text-slate-400">
+                    <i class="fas fa-user-secret text-lg"></i>
+                    <span class="font-medium text-sm">Attack Simulator</span>
+                </button>
+            </nav>
+
+            <div class="mt-auto pt-6 border-t border-slate-800">
+                <div class="flex items-center gap-3 text-xs text-slate-500">
+                    <span class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    Backend Linked: 127.0.0.1:8000
+                </div>
+            </div>
+        </aside>
+
+        <main class="flex-1 overflow-y-auto p-8 relative">
+            
+            <section id="tab-text" class="tab-content max-w-4xl mx-auto space-y-6">
+                <div class="flex flex-col gap-1">
+                    <h2 class="text-3xl font-bold tracking-tight">Text & Citation</h2>
+                    <p class="text-slate-400 text-sm">Analyze toxicity, bias, and verify source citations via custom models.</p>
+                </div>
+
+                <div class="bg-slate-800/40 border border-slate-700 rounded-2xl p-6">
+                    <label class="block text-xs font-semibold text-slate-500 uppercase mb-3">Input Text Block</label>
+                    <textarea id="text-input" rows="8" class="w-full bg-[#0f172a] border border-slate-700 rounded-xl p-5 focus:ring-2 focus:ring-emerald-500 outline-none text-sm leading-relaxed" placeholder="Enter model-generated text or user prompt for safety auditing..."></textarea>
+                    
+                    <div class="flex gap-4 mt-6">
+                        <button onclick="callAPI('/analyze_text')" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-xl font-bold transition shadow-lg shadow-emerald-900/20">Analyze Safety</button>
+                        <button onclick="callAPI('/verify-citation')" class="flex-1 border border-slate-700 bg-slate-800/50 hover:bg-slate-700 text-slate-300 py-3 rounded-xl font-bold transition">Verify Citations</button>
+                    </div>
+                </div>
+            </section>
+
+            <section id="tab-image" class="tab-content hidden max-w-4xl mx-auto space-y-6">
+                <div class="flex flex-col gap-1 text-blue-400">
+                    <h2 class="text-3xl font-bold tracking-tight text-white">Visual Forensics</h2>
+                    <p class="text-slate-400 text-sm">Detect deepfakes, AI-generated artifacts, and sensitive content.</p>
+                </div>
+
+                <div class="bg-slate-800/40 border border-slate-700 rounded-2xl p-10 text-center border-dashed">
+                    <i class="fas fa-cloud-arrow-up text-5xl text-slate-600 mb-4"></i>
+                    <p class="text-slate-300 mb-6">Drag and drop your image or click to browse</p>
+                    <input type="file" id="image-file" class="hidden" accept="image/*" onchange="previewImage(this)">
+                    <button onclick="document.getElementById('image-file').click()" class="bg-slate-700 hover:bg-slate-600 text-white px-8 py-3 rounded-xl font-medium transition">Select Image</button>
+                    <div id="image-preview" class="mt-6 hidden mx-auto max-w-xs rounded-lg overflow-hidden border-2 border-slate-700"></div>
+                    <button onclick="uploadImage()" id="btn-upload" class="mt-6 hidden w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-bold transition">Run Forensics Model</button>
+                </div>
+            </section>
+
+            <section id="tab-security" class="tab-content hidden max-w-4xl mx-auto space-y-6">
+                <div class="flex flex-col gap-1">
+                    <h2 class="text-3xl font-bold tracking-tight text-red-500">Red Team Attack Simulator</h2>
+                    <p class="text-slate-400 text-sm">Simulate adversarial attacks to test model robustness.</p>
+                </div>
+                <div class="grid grid-cols-2 gap-6">
+                    <div onclick="callAPI('/api/api/bot_detect')" class="p-6 bg-slate-800/40 border border-slate-700 rounded-2xl cursor-pointer hover:border-red-500 transition group">
+                        <i class="fas fa-robot text-2xl mb-3 text-slate-500 group-hover:text-red-500"></i>
+                        <h4 class="font-bold">Bot Detection</h4>
+                        <p class="text-xs text-slate-500 mt-2">Differentiate between human and AI agent behaviors.</p>
+                    </div>
+                    <div onclick="callAPI('/api/api/redteam_test')" class="p-6 bg-slate-800/40 border border-slate-700 rounded-2xl cursor-pointer hover:border-red-500 transition group">
+                        <i class="fas fa-burst text-2xl mb-3 text-slate-500 group-hover:text-red-500"></i>
+                        <h4 class="font-bold">Stress Test</h4>
+                        <p class="text-xs text-slate-500 mt-2">Trigger jailbreak scenarios and adversarial prompts.</p>
+                    </div>
+                </div>
+            </section>
+
+            <div class="max-w-4xl mx-auto mt-12">
+                <div class="bg-black/80 rounded-2xl border border-slate-800 overflow-hidden shadow-2xl">
+                    <div class="bg-slate-800/80 px-5 py-3 border-b border-slate-800 flex justify-between items-center">
+                        <div class="flex gap-2">
+                            <span class="w-3 h-3 rounded-full bg-red-500/50"></span>
+                            <span class="w-3 h-3 rounded-full bg-yellow-500/50"></span>
+                            <span class="w-3 h-3 rounded-full bg-emerald-500/50"></span>
+                        </div>
+                        <span class="text-[10px] font-mono text-slate-500 uppercase tracking-widest">Model Inference Output</span>
+                        <button onclick="document.getElementById('output-json').innerText = '// Idle'" class="text-[10px] text-slate-500 hover:text-white transition">Clear Logs</button>
+                    </div>
+                    <pre id="output-json" class="p-8 text-emerald-400 font-mono text-xs overflow-auto h-80 leading-relaxed whitespace-pre-wrap">// Waiting for signal from Safety Engine...</pre>
+                </div>
+            </div>
+        </main>
+    </div>
+
+   <script>
+const BASE = "http://127.0.0.1:8000";
+
+// TAB NAVIGATION
+function showTab(tabId) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+    document.querySelectorAll('nav button').forEach(el => el.classList.remove('tab-active'));
+
+    document.getElementById('tab-' + tabId).classList.remove('hidden');
+    document.getElementById('btn-' + tabId).classList.add('tab-active');
+}
+
+// TEXT / CITATION / SECURITY HANDLER
+async function callAPI(endpoint) {
+    const out = document.getElementById('output-json');
+    const text = document.getElementById('text-input')?.value || "";
+
+    out.innerText = `[INFO] Calling ${endpoint}...`;
+
+    let payload = {};
+
+    // Proper payloads
+    if (endpoint === "/analyze_text" || endpoint === "/verify-citation") {
+        payload = { text: text };
+    }
+
+    try {
+        const res = await fetch(`${BASE}${endpoint}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: Object.keys(payload).length ? JSON.stringify(payload) : null
+        });
+
+        const data = await res.json();
+        out.innerText = JSON.stringify(data, null, 4);
+
+    } catch (err) {
+        out.innerText = `[CRITICAL ERROR]\n${err.message}`;
+    }
+}
+
+// IMAGE PREVIEW
+function previewImage(input) {
+    const preview = document.getElementById('image-preview');
+    const uploadBtn = document.getElementById('btn-upload');
+
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = e => {
+            preview.innerHTML = `<img src="${e.target.result}" class="w-full h-auto">`;
+            preview.classList.remove('hidden');
+            uploadBtn.classList.remove('hidden');
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+// IMAGE UPLOAD
+async function uploadImage() {
+    const fileInput = document.getElementById('image-file');
+    const out = document.getElementById('output-json');
+
+    const formData = new FormData();
+    formData.append("file", fileInput.files[0]);
+
+    out.innerText = "[INFO] Uploading image...";
+
+    try {
+        const res = await fetch(`${BASE}/analyze/image`, {
+            method: "POST",
+            body: formData
+        });
+
+        const data = await res.json();
+        out.innerText = JSON.stringify(data, null, 4);
+
+    } catch (err) {
+        out.innerText = "[ERROR] Image API failed.";
+    }
+}
+</script>
+
+</html>
